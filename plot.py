@@ -37,14 +37,22 @@ class GeanyPlot(geany.Plugin):
         # remove canvas? figure? anything else?
 
     def on_plot_item_clicked(widget, data):
-
-        # load data TODO: support more than two columns and more than one dataset
+        """Open dialogs that allow the user the select which columns to plot.
+        Then, load and plot the data.
+        """
 
         fileName = geany.document.get_current().file_name
+
+        # figure out which columns to use:
+        xCol = geany.dialogs.show_input_numeric("Select columns to plot", "x values", 1, 1, 10, 1)
+        yCol = geany.dialogs.show_input_numeric("Select columns to plot", "y values", 2, 1, 10, 1)
+        xCol, yCol = int(xCol)-1, int(yCol)-1 # use Python counting!
+
         try:
-            x, y = np.loadtxt(fileName, usecols=(0,1), unpack=True)
+            x, y = np.loadtxt(fileName, usecols=(xCol, yCol), unpack=True)
         except:
             geany.dialogs.show_msgbox("Loading data failed!")
+            return
 
         # create a new window
         win = gtk.Window(gtk.WINDOW_TOPLEVEL)
@@ -66,4 +74,3 @@ class GeanyPlot(geany.Plugin):
         
         win.show_all()
         gtk.main()
-
