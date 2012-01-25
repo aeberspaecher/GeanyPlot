@@ -37,9 +37,14 @@ class GeanyPlot(geany.Plugin):
         # remove canvas? figure? anything else?
 
     def on_plot_item_clicked(widget, data):
+
         # load data TODO: support more than two columns and more than one dataset
+
         fileName = geany.document.get_current().file_name
-        x, y = np.loadtxt(fileName, usecols=(0,1), unpack=True)
+        try:
+            x, y = np.loadtxt(fileName, usecols=(0,1), unpack=True)
+        except:
+            geany.dialogs.show_msgbox("Loading data failed!")
 
         # create a new window
         win = gtk.Window(gtk.WINDOW_TOPLEVEL)
