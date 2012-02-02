@@ -5,11 +5,12 @@ GeanyPlot
 About
 =====
 
-GeanyPlot is a Geany plugin for data visualization written in Python.
+GeanyPlot is a Geany plugin for data visualization written in Python. The
+plugin needs codebrainz' GeanyPy (see https://github.com/codebrainz/geanypy).
 
 The plugin is supposed to be used for quick data inspection without the need
-to run a Python session just for the purpose of visualization. The plugin uses
-Matplotlib.
+to run a Python session just for the purpose of visualization. The plugin
+uses Matplotlib.
 
 License
 =======
