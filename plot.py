@@ -34,7 +34,9 @@ import matplotlib
 matplotlib.use('GTKAgg')
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanvas
-from matplotlib.backends.backend_gtkagg import NavigationToolbar2GTKAgg as NavigationToolbar
+from matplotlib.backends.backend_gtkagg import NavigationToolbar2GTKAgg as\
+    NavigationToolbar
+import itertools
 
 
 class GeanyPlot(geany.Plugin):
@@ -59,23 +61,59 @@ class GeanyPlot(geany.Plugin):
         Then, load and plot the data.
         """
 
+        # define cyclers for plot properties (redefine on function entry such
+        # that the plots look the same each time the function is called):
+        markers = itertools.cycle(["x", "o", "s"])
+        linestyles = itertools.cycle(["-", "--"])
+        colors = itertools.cycle(["blue", "red", "#014421", "#FF00FF", "gray"])
+        # blue, red, forest-green, magenta, gray
+
         fileName = geany.document.get_current().file_name
 
-        # figure out which columns to use:
-        xCol = geany.dialogs.show_input_numeric("Select columns to plot", "x values", 1, 1, 10, 1)
-        yCol = geany.dialogs.show_input_numeric("Select columns to plot", "y values", 2, 1, 10, 1)
-        xCol, yCol = int(xCol)-1, int(yCol)-1 # use Python counting!
+        # TODO: use a better/more suitable GTK dialogue
+        useLinePlot = geany.dialogs.show_question(
+            "Create a line plot (scatter plot otherwise)?")
 
+        # figure out which columns to use:
+        xCol = geany.dialogs.show_input_numeric("Select column to plot as x-values",
+                                                "x values", 1, 1, 10, 1)
+        xCol = int(xCol) - 1 # Python couting
+
+        # load data:
         try:
-            x, y = np.loadtxt(fileName, usecols=(xCol, yCol), unpack=True)
+            x = np.loadtxt(fileName, usecols=[xCol], unpack=True)
         except:
-            geany.dialogs.show_msgbox("Loading data failed!")
+            geany.dialogs.show_msgbox("Loading x data failed!")
             return
+        
+        addMoreY = True
+        yCols = []
+        colSuggestion = 2
+        yData = []
+        
+        while(addMoreY):
+            yColNew = geany.dialogs.show_input_numeric("Select columns to plot",
+                                                       "y values", colSuggestion,
+                                                       1, 10, 1)
+            # load data:
+            try:
+                newY = np.loadtxt(fileName, usecols=[int(yColNew)-1])
+            except:
+                geany.dialogs.show_msgbox("Loading y data from column %s failed!"\
+                                          %yColNew)
+                return
+
+            yData.append(newY)
+
+            colSuggestion += 1
+
+            # add more y-data?            
+            addMoreY = geany.dialogs.show_question("Add more y values?")
 
         # create a new window
         win = gtk.Window(gtk.WINDOW_TOPLEVEL)
         win.connect("destroy", lambda x: gtk.main_quit())
-        win.set_default_size(600,450)
+        win.set_default_size(600, 450)
         win.set_title("GeanyPlot")
 
         vbox = gtk.VBox()
@@ -83,7 +121,15 @@ class GeanyPlot(geany.Plugin):
 
         fig = Figure(figsize=(5,4), dpi=100)
         ax = fig.add_subplot(111)
-        ax.plot(x, y)
+
+        if(useLinePlot):
+            for y in yData:
+                ax.plot(x, y, color=colors.next(), ls=linestyles.next(), lw=2)
+        else:
+            for y in yData:
+                ax.plot(x, y, ls="", marker=markers.next(),
+                        markeredgewidth=1, markeredgecolor=colors.next(),
+                        markerfacecolor="None", ms=5)
 
         canvas = FigureCanvas(fig)  # a gtk.DrawingArea
         vbox.pack_start(canvas)
