@@ -26,12 +26,13 @@ Matplotlib and the Geany's Python bindings available from
 https://github.com/codebrainz/geanypy
 """
 
+import matplotlib
+matplotlib.use('GTKAgg')
+
 import gtk
 import geany
 import numpy as np
 
-import matplotlib
-matplotlib.use('GTKAgg')
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanvas
 from matplotlib.backends.backend_gtkagg import NavigationToolbar2GTKAgg as\
