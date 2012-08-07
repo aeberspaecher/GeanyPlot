@@ -5,12 +5,12 @@
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation; either version 2 of the License, or
 #  (at your option) any later version.
-#  
+#
 #  This program is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
-#  
+#
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
@@ -27,7 +27,7 @@ https://github.com/codebrainz/geanypy
 """
 
 import matplotlib
-matplotlib.use('GTKAgg')
+matplotlib.use("GTKAgg")
 
 import gtk
 import geany
@@ -43,7 +43,7 @@ import itertools
 class GeanyPlot(geany.Plugin):
 
     __plugin_name__ = "GeanyPlot"
-    __plugin_version__ = "0.01"
+    __plugin_version__ = "0.02"
     __plugin_description__ = "Plot numerical data stored in textfiles using Matplotlib."
     __plugin_author__ = "Alexander Eberspächer <alex.eberspaecher@googlemail.com>"
 
@@ -57,17 +57,17 @@ class GeanyPlot(geany.Plugin):
         self.menu_item.destroy()
         # remove canvas? figure? anything else?
 
-    def on_plot_item_clicked(widget, data):
+    def on_plot_item_clicked(self, widget):
         """Open dialogs that allow the user the select which columns to plot.
         Then, load and plot the data.
         """
 
         # define cyclers for plot properties (redefine on function entry such
         # that the plots look the same each time the function is called):
-        markers = itertools.cycle(["x", "o", "s"])
+        markers = itertools.cycle(["x", "s", "+", "o"])
         linestyles = itertools.cycle(["-", "--"])
-        colors = itertools.cycle(["blue", "red", "#014421", "#FF00FF", "gray"])
-        # blue, red, forest-green, magenta, gray
+        colors = itertools.cycle(["blue", "red", "#014421", "gray", "black"])
+        # blue, red, forest-green, gray, black
 
         fileName = geany.document.get_current().file_name
 
@@ -78,7 +78,7 @@ class GeanyPlot(geany.Plugin):
         # figure out which columns to use:
         xCol = geany.dialogs.show_input_numeric("Select column to plot as x-values",
                                                 "x values", 1, 1, 10, 1)
-        xCol = int(xCol) - 1 # Python couting
+        xCol = int(xCol) - 1  # Python couting
 
         # load data:
         try:
@@ -86,12 +86,12 @@ class GeanyPlot(geany.Plugin):
         except:
             geany.dialogs.show_msgbox("Loading x data failed!")
             return
-        
-        addMoreY = True
-        yCols = []
+
         colSuggestion = 2
         yData = []
-        
+        addMoreY = True
+        labels = []
+
         while(addMoreY):
             yColNew = geany.dialogs.show_input_numeric("Select columns to plot",
                                                        "y values", colSuggestion,
@@ -99,8 +99,9 @@ class GeanyPlot(geany.Plugin):
             # load data:
             try:
                 newY = np.loadtxt(fileName, usecols=[int(yColNew)-1])
+                labels.append("Column #%s"%(int(yColNew)-1))
             except:
-                geany.dialogs.show_msgbox("Loading y data from column %s failed!"\
+                geany.dialogs.show_msgbox("Loading y data from column %s failed!"
                                           %yColNew)
                 return
 
@@ -108,7 +109,7 @@ class GeanyPlot(geany.Plugin):
 
             colSuggestion += 1
 
-            # add more y-data?            
+            # add more y-data?
             addMoreY = geany.dialogs.show_question("Add more y values?")
 
         # create a new window
@@ -124,18 +125,20 @@ class GeanyPlot(geany.Plugin):
         ax = fig.add_subplot(111)
 
         if(useLinePlot):
-            for y in yData:
-                ax.plot(x, y, color=colors.next(), ls=linestyles.next(), lw=2)
-        else:
-            for y in yData:
-                ax.plot(x, y, ls="", marker=markers.next(),
-                        markeredgewidth=1, markeredgecolor=colors.next(),
-                        markerfacecolor="None", ms=5)
+            for y, label in zip(yData, labels):
+                ax.plot(x, y, color=colors.next(), ls=linestyles.next(), lw=2, label=label)
+            ax.legend()
+        else:  # scatter plot
+            for y, label in zip(yData, labels):
+                ax.scatter(x, y, marker=markers.next(), color=colors.next(), s=35,
+                           facecolors="None", linewidths=1, label=label)
+            ax.legend(scatterpoints=1)
 
+        fig.tight_layout()
         canvas = FigureCanvas(fig)  # a gtk.DrawingArea
         vbox.pack_start(canvas)
         toolbar = NavigationToolbar(canvas, win)
         vbox.pack_start(toolbar, False, False)
-        
+
         win.show_all()
         gtk.main()
