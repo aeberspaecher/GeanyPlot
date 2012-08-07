@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #-*- coding:utf-8 -*-
 
 #  This program is free software; you can redistribute it and/or modify
@@ -25,9 +24,6 @@ to run a Python session just for the purpose of visualization. The plugin uses
 Matplotlib and the Geany's Python bindings available from
 https://github.com/codebrainz/geanypy
 """
-
-import matplotlib
-matplotlib.use("GTKAgg")
 
 import gtk
 import geany
@@ -78,13 +74,14 @@ class GeanyPlot(geany.Plugin):
         # figure out which columns to use:
         xCol = geany.dialogs.show_input_numeric("Select column to plot as x-values",
                                                 "x values", 1, 1, 10, 1)
-        xCol = int(xCol) - 1  # Python couting
 
         # load data:
         try:
-            x = np.loadtxt(fileName, usecols=[xCol], unpack=True)
+            xCol = int(xCol)  # Python couting
+            x = np.loadtxt(fileName, usecols=[xCol-1], unpack=True)
+            xLabel = r"Column \# %s"%xCol
         except:
-            geany.dialogs.show_msgbox("Loading x data failed!")
+            geany.dialogs.show_msgbox("Loading x data from column %s failed!"%(xCol))
             return
 
         colSuggestion = 2
@@ -96,13 +93,15 @@ class GeanyPlot(geany.Plugin):
             yColNew = geany.dialogs.show_input_numeric("Select columns to plot",
                                                        "y values", colSuggestion,
                                                        1, 10, 1)
+            yCol = int(yColNew)
+
             # load data:
             try:
-                newY = np.loadtxt(fileName, usecols=[int(yColNew)-1])
-                labels.append("Column #%s"%(int(yColNew)-1))
+                newY = np.loadtxt(fileName, usecols=[yCol-1], unpack=True)
+                labels.append(r"Column \#%s"%(yCol))
             except:
                 geany.dialogs.show_msgbox("Loading y data from column %s failed!"
-                                          %yColNew)
+                                          %(yCol))
                 return
 
             yData.append(newY)
@@ -134,6 +133,7 @@ class GeanyPlot(geany.Plugin):
                            facecolors="None", linewidths=1, label=label)
             ax.legend(scatterpoints=1)
 
+        ax.set_xlabel(xLabel)
         fig.tight_layout()
         canvas = FigureCanvas(fig)  # a gtk.DrawingArea
         vbox.pack_start(canvas)
